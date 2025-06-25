@@ -340,6 +340,60 @@ function displayResults(name, retroactiveResult, ongoingResult) {
         });
     }
 
+    // FORÇAR TEXTO PRETO VIA JAVASCRIPT!
+    setTimeout(() => {
+        // Período considerado nos retroativos
+        const retroCalculationInfo = document.querySelector('.retroactive .calculation-info');
+        if (retroCalculationInfo) {
+            retroCalculationInfo.style.color = '#000000';
+            retroCalculationInfo.style.fontWeight = '800';
+            const retroP = retroCalculationInfo.querySelector('p');
+            if (retroP) {
+                retroP.style.color = '#000000';
+                retroP.style.fontWeight = '800';
+                const retroStrong = retroP.querySelector('strong');
+                if (retroStrong) {
+                    retroStrong.style.color = '#000000';
+                    retroStrong.style.fontWeight = '800';
+                }
+            }
+        }
+
+        // Período considerado nos vincendos
+        const ongoingCalculationInfo = document.querySelector('.ongoing .calculation-info');
+        if (ongoingCalculationInfo) {
+            ongoingCalculationInfo.style.color = '#000000';
+            ongoingCalculationInfo.style.fontWeight = '800';
+            const ongoingP = ongoingCalculationInfo.querySelector('p');
+            if (ongoingP) {
+                ongoingP.style.color = '#000000';
+                ongoingP.style.fontWeight = '800';
+                const ongoingStrong = ongoingP.querySelector('strong');
+                if (ongoingStrong) {
+                    ongoingStrong.style.color = '#000000';
+                    ongoingStrong.style.fontWeight = '800';
+                }
+            }
+        }
+
+        // Disclaimer importante
+        const disclaimer = document.querySelector('.disclaimer');
+        if (disclaimer) {
+            disclaimer.style.color = '#000000';
+            disclaimer.style.fontWeight = '800';
+            const disclaimerH4 = disclaimer.querySelector('h4');
+            if (disclaimerH4) {
+                disclaimerH4.style.color = '#000000';
+                disclaimerH4.style.fontWeight = '800';
+            }
+            const disclaimerP = disclaimer.querySelector('p');
+            if (disclaimerP) {
+                disclaimerP.style.color = '#000000';
+                disclaimerP.style.fontWeight = '800';
+            }
+        }
+    }, 100);
+
     // Mostra os resultados
     document.getElementById('results').style.display = 'block';
     
@@ -348,6 +402,14 @@ function displayResults(name, retroactiveResult, ongoingResult) {
         behavior: 'smooth',
         block: 'start'
     });
+
+    // Forçar cor preta nos textos específicos
+    setTimeout(() => {
+        document.querySelectorAll('.calculation-info, .calculation-info *, .disclaimer, .disclaimer *').forEach(el => {
+            el.style.color = '#000000';
+            el.style.fontWeight = '800';
+        });
+    }, 50);
 }
 
 function downloadPDF() {
