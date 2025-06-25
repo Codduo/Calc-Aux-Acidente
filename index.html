@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Auxílio Acidente</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="lock-button" id="lockButton" title="Acesso Administrativo">🔒</button>
+            <img src="LOGOS.png" alt="Logo da Empresa" class="logo">
+            <h1>Calculadora de Auxílio Acidente</h1>
+            <p class="subtitle">Os valores apresentados a seguir são meramente estimativas e podem sofrer variações ao longo do processo. Em nenhum momento garantimos o recebimento de uma indenização.</p>
+        </header>
+        
+        <!-- Modal de Login -->
+        <div id="loginModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeModal">&times;</span>
+                <h3>🔐 Acesso Administrativo</h3>
+                <input type="password" id="passwordInput" placeholder="Digite a senha" maxlength="20">
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" id="cancelLogin">Cancelar</button>
+                    <button type="button" class="btn-login" id="confirmLogin">Entrar</button>
+                </div>
+            </div>
+        </div>
+        
+        <form id="calculator-form">
+            <div class="form-group">
+                <label for="name">Nome do Cliente</label>
+                <input type="text" id="name" placeholder="Digite o nome completo" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="benefitEndDate">Data de Cessação do Auxílio Doença</label>
+                <input type="date" id="benefitEndDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="birthDate">Data de Nascimento</label>
+                <input type="date" id="birthDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">Gênero</label>
+                <select id="gender" required>
+                    <option value="">Selecione o gênero</option>
+                    <option value="male">Masculino</option>
+                    <option value="female">Feminino</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="isRural">Trabalhador Rural</label>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="isRural">
+                    <label for="isRural">Marque se for trabalhador rural</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="monthlyAmount">Valor Mensal do Auxílio (R$)</label>
+                <input type="number" id="monthlyAmount" value="706.00" step="0.01" min="0" placeholder="0,00" required>
+            </div>
+            
+            <button type="button" id="calculateButton">Calcular Valores</button>
+        </form>
+        
+        <div id="results" style="display: none;">
+            <button type="button" id="downloadPDFButton">📄 Baixar Relatório em PDF</button>
+            
+            <h2>Resultados do Cálculo</h2>
+            
+            <div id="clientName"></div>
+            
+            <div id="totalValue"></div>
+            
+            <div class="results-container">
+                <div class="retroactive">
+                    <h3>💰 Valores Retroativos</h3>
+                    <div id="retroactiveTotal"></div>
+                    <div class="calculation-info">
+                        <p><strong>Período considerado:</strong> Inclui 18 meses adicionais referentes ao tempo de processo judicial</p>
+                    </div>
+                    <ul id="retroactiveValues"></ul>
+                </div>
+                
+                <div class="ongoing">
+                    <h3>📅 Valores Vincendos</h3>
+                    <div id="ongoingTotal"></div>
+                    <div class="calculation-info">
+                        <p><strong>Período considerado:</strong> A partir de 18 meses da data atual até a aposentadoria</p>
+                    </div>
+                    <ul id="ongoingValues"></ul>
+                </div>
+            </div>
+            
+            <div class="disclaimer">
+                <h4>⚠️ Importante</h4>
+                <p>Este cálculo é uma estimativa baseada nas informações fornecidas. Os valores reais podem variar conforme decisão judicial, correções monetárias, juros e outras variáveis processuais.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts externos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
