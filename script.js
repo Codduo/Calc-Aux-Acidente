@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('downloadPDFButton').addEventListener('click', downloadPDF);
     
     // Event listeners do sistema de login
-    document.getElementById('lockButton').addEventListener('click', openLoginModal);
+    document.getElementById('lockButton').addEventListener('click', handleLockButtonClick);
     document.getElementById('closeModal').addEventListener('click', closeLoginModal);
     document.getElementById('cancelLogin').addEventListener('click', closeLoginModal);
     document.getElementById('confirmLogin').addEventListener('click', attemptLogin);
@@ -23,6 +23,34 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // REMOVIDO: máscara de moeda que estava bloqueando
 });
+
+// Nova função para gerenciar o clique no botão de lock
+function handleLockButtonClick() {
+    if (isAdminLoggedIn) {
+        // Se já está logado, faz logout
+        logoutAdmin();
+    } else {
+        // Se não está logado, abre modal de login
+        openLoginModal();
+    }
+}
+
+// Nova função para fazer logout do admin
+function logoutAdmin() {
+    isAdminLoggedIn = false;
+    
+    // Restaura aparência original do botão
+    const lockButton = document.getElementById('lockButton');
+    lockButton.innerHTML = '🔒';
+    lockButton.style.background = 'rgba(255, 255, 255, 0.1)';
+    lockButton.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    lockButton.title = 'Acesso Administrativo';
+    
+    // Se já tem resultados calculados, recalcula com valores descontados
+    if (document.getElementById('results').style.display === 'block') {
+        calculateValues();
+    }
+}
 
 // Sistema de Login
 function openLoginModal() {
@@ -47,7 +75,7 @@ function attemptLogin() {
         lockButton.innerHTML = '🔓';
         lockButton.style.background = 'rgba(34, 197, 94, 0.2)';
         lockButton.style.borderColor = 'rgba(34, 197, 94, 0.4)';
-        lockButton.title = 'Modo Administrativo Ativo';
+        lockButton.title = 'Modo Administrativo Ativo - Clique para sair';
         
         // Se já tem resultados calculados, recalcula com valores reais
         if (document.getElementById('results').style.display === 'block') {
