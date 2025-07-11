@@ -69,6 +69,12 @@
                 <input type="number" id="monthlyAmount" value="706.00" step="0.01" min="0" placeholder="0,00" required>
             </div>
             
+            <div class="form-group">
+                <label for="processMonths">Média de Meses Estimados do Processo</label>
+                <input type="number" id="processMonths" value="18" step="1" min="1" max="120" placeholder="18" required>
+                <small class="field-help">Tempo médio estimado para conclusão do processo judicial (em meses)</small>
+            </div>
+            
             <button type="button" id="calculateButton">Calcular Valores</button>
         </form>
         
@@ -82,20 +88,37 @@
             <div id="totalValue"></div>
             
             <div class="results-container">
-                <div class="retroactive">
-                    <h3>💰 Valores Retroativos</h3>
-                    <div id="retroactiveTotal"></div>
-                    <div class="calculation-info" style="color: #000000 !important;">
-                        <p style="color: #000000 !important; font-weight: 800 !important;"><strong style="color: #000000 !important;">Período considerado:</strong> Inclui 18 meses adicionais referentes ao tempo de processo judicial</p>
+                <div class="main-result">
+                    <h3>💰 Valores do Processo - Retroativos</h3>
+                    <div class="lump-sum-display">
+                        <h4>PARCELA ÚNICA: <span id="lumpSumAmount"></span></h4>
                     </div>
-                    <ul id="retroactiveValues"></ul>
+                    
+                    <div class="observations">
+                        <h5>Observações:</h5>
+                        <p id="processObservation"></p>
+                        <p><strong>Já descontado nossos honorários</strong></p>
+                    </div>
+                    
+                    <div class="period-info">
+                        <h5>Período do Cálculo dos Retroativos:</h5>
+                        <p id="retroactivePeriod"></p>
+                        <div class="additional-note">
+                            <p><strong>Observação:</strong></p>
+                            <p>Já está considerando os 13º salários</p>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="ongoing">
-                    <h3>📅 Valores Vincendos</h3>
+                <div class="secondary-info">
+                    <h3>📅 Estimativa até Aposentadoria</h3>
+                    <div class="ongoing-disclaimer">
+                        <p><strong>⚠️ Importante:</strong> Os valores abaixo são apenas estimativas até a aposentadoria e <strong>NÃO fazem parte do valor que será recebido no processo</strong>.</p>
+                    </div>
                     <div id="ongoingTotal"></div>
                     <div class="calculation-info" style="color: #000000 !important;">
-                        <p style="color: #000000 !important; font-weight: 800 !important;"><strong style="color: #000000 !important;">Período considerado:</strong> A partir de 18 meses da data atual até a aposentadoria</p>
+                        <p style="color: #000000 !important; font-weight: 800 !important;"><strong style="color: #000000 !important;">Período considerado:</strong> A partir da conclusão do processo até a aposentadoria</p>
+                        <p style="color: #666 !important; font-size: 0.8rem; font-style: italic;">Valores já descontados nossos honorários</p>
                     </div>
                     <ul id="ongoingValues"></ul>
                 </div>

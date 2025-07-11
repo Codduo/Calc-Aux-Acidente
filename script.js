@@ -20,8 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loginModal').addEventListener('click', (e) => {
         if (e.target.id === 'loginModal') closeLoginModal();
     });
-    
-    // REMOVIDO: máscara de moeda que estava bloqueando
 });
 
 // Nova função para gerenciar o clique no botão de lock
@@ -97,8 +95,6 @@ function attemptLogin() {
     }
 }
 
-// Função removida - estava bloqueando a digitação
-
 function calculateValues() {
     // Validação e obtenção dos dados
     const name = document.getElementById('name').value.trim();
@@ -107,15 +103,17 @@ function calculateValues() {
     const gender = document.getElementById('gender').value;
     const isRural = document.getElementById('isRural').checked;
     const monthlyAmountInput = document.getElementById('monthlyAmount').value;
+    const processMonthsInput = document.getElementById('processMonths').value;
 
     // Validações
-    if (!name || !benefitEndDateInput || !birthDateInput || !gender || !monthlyAmountInput) {
+    if (!name || !benefitEndDateInput || !birthDateInput || !gender || !monthlyAmountInput || !processMonthsInput) {
         alert("Por favor, preencha todos os campos obrigatórios.");
         return;
     }
 
     const benefitEndDate = new Date(benefitEndDateInput);
     const birthDate = new Date(birthDateInput);
+    const processMonths = parseInt(processMonthsInput);
     
     // Parse mais flexível para o valor monetário
     let monthlyAmount = parseFloat(
@@ -129,66 +127,60 @@ function calculateValues() {
         return;
     }
 
+    if (isNaN(processMonths) || processMonths <= 0) {
+        alert("Por favor, insira um número válido de meses para o processo.");
+        return;
+    }
+
     // Datas importantes para o cálculo
     const today = new Date();
     const fiveYearsAgo = new Date(today);
     fiveYearsAgo.setFullYear(today.getFullYear() - 5);
     
-    // Adiciona 18 meses à data atual para separar retroativo de vincendo
-    const eighteenMonthsFromNow = new Date(today);
-    eighteenMonthsFromNow.setMonth(today.getMonth() + 18);
+    // Adiciona os meses do processo à data atual
+    const processEndDate = new Date(today);
+    processEndDate.setMonth(today.getMonth() + processMonths);
 
-    // Cálculo dos Valores Retroativos (inclui os +18 meses)
+    // Cálculo dos Valores Retroativos (inclui os meses do processo)
     const retroactiveResult = calculateRetroactiveValues(
         benefitEndDate, 
         fiveYearsAgo, 
-        eighteenMonthsFromNow,
+        processEndDate,
         monthlyAmount
     );
 
-    // Cálculo dos Valores Vincendos (a partir dos 18 meses até aposentadoria)
+    // Cálculo dos Valores Vincendos (a partir do fim do processo até aposentadoria)
     const ongoingResult = calculateOngoingValues(
-        eighteenMonthsFromNow,
+        processEndDate,
         birthDate,
         gender,
         isRural,
         monthlyAmount
     );
 
-    // Aplicar desconto se não estiver logado como admin
+    // Sistema de desconto atualizado
     let finalRetroactive = retroactiveResult;
     let finalOngoing = ongoingResult;
     
     if (!isAdminLoggedIn) {
-        // Aplica desconto: 40% de desconto + 4 salários mínimos (R$ 1.500 cada)
-        // Ou seja: 60% do valor total - R$ 6.000
-        const originalTotal = retroactiveResult.total + ongoingResult.total;
-        const discountedTotal = Math.max(0, (originalTotal * 0.6) - 6000);
-        
-        // Proporcionalmente distribui o valor com desconto
-        const retroactiveRatio = retroactiveResult.total / originalTotal;
-        const ongoingRatio = ongoingResult.total / originalTotal;
-        
+        // Para clientes: aplica desconto nos retroativos E vincendos
+        // Retroativos: COM desconto de 40% (mantém 60%)
         finalRetroactive = {
             ...retroactiveResult,
-            total: discountedTotal * retroactiveRatio
+            total: retroactiveResult.total * 0.6
         };
+        
+        // Vincendos: aplica desconto: 40% de desconto + 4 salários mínimos
+        const originalOngoingTotal = ongoingResult.total;
+        const discountedOngoingTotal = Math.max(0, (originalOngoingTotal * 0.6) - 6000);
         
         finalOngoing = {
             ...ongoingResult,
-            total: discountedTotal * ongoingRatio
+            total: discountedOngoingTotal
         };
         
-        // Ajusta os valores individuais proporcionalmente
-        if (finalRetroactive.values.length > 0) {
-            const retroactiveMultiplier = finalRetroactive.total / retroactiveResult.total;
-            finalRetroactive.values = finalRetroactive.values.map(item => ({
-                ...item,
-                value: item.value * retroactiveMultiplier
-            }));
-        }
-        
-        if (finalOngoing.values.length > 0) {
+        // Ajusta os valores individuais proporcionalmente apenas para vincendos
+        if (finalOngoing.values.length > 0 && ongoingResult.total > 0) {
             const ongoingMultiplier = finalOngoing.total / ongoingResult.total;
             finalOngoing.values = finalOngoing.values.map(item => ({
                 ...item,
@@ -198,7 +190,7 @@ function calculateValues() {
     }
 
     // Exibição dos resultados
-    displayResults(name, finalRetroactive, finalOngoing);
+    displayResults(name, finalRetroactive, finalOngoing, processMonths, benefitEndDate, processEndDate);
 }
 
 function calculateRetroactiveValues(benefitEndDate, fiveYearsAgo, endDate, monthlyAmount) {
@@ -208,7 +200,7 @@ function calculateRetroactiveValues(benefitEndDate, fiveYearsAgo, endDate, month
     
     const currentDate = new Date(startDate);
     
-    // Calcula mês a mês até a data final (hoje + 18 meses)
+    // Calcula mês a mês até a data final (fim do processo)
     while (currentDate <= endDate) {
         const monthValue = monthlyAmount;
         const dateStr = currentDate.toLocaleDateString('pt-BR', { 
@@ -309,36 +301,31 @@ function calculateOngoingValues(startDate, birthDate, gender, isRural, monthlyAm
     };
 }
 
-function displayResults(name, retroactiveResult, ongoingResult) {
+function displayResults(name, retroactiveResult, ongoingResult, processMonths, benefitEndDate, processEndDate) {
     // Nome do cliente
     document.getElementById('clientName').innerHTML = `
         <strong>Cliente:</strong> ${name}
     `;
 
-    // Totais
+    // Totais - TÍTULO DISCRETO
     const totalValue = retroactiveResult.total + ongoingResult.total;
     document.getElementById('totalValue').innerHTML = `
-        Valor Total Estimado: <span class="amount">R$ ${formatCurrency(totalValue)}</span>
+        <small style="color: #718096; font-size: 0.9rem;">Valor Total Estimado até Aposentadoria: R$ ${formatCurrency(totalValue)}</small>
     `;
 
-    // Valores Retroativos
-    document.getElementById('retroactiveTotal').innerHTML = `
-        <strong>Total:</strong> R$ ${formatCurrency(retroactiveResult.total)}<br>
-        <small>Período: ${retroactiveResult.period.start.toLocaleDateString('pt-BR')} até ${retroactiveResult.period.end.toLocaleDateString('pt-BR')}</small>
+    // NOVA EXIBIÇÃO - Valores Retroativos como Parcela Única
+    document.getElementById('lumpSumAmount').textContent = `R$ ${formatCurrency(retroactiveResult.total)}`;
+    
+    // Observação sobre o período do processo
+    document.getElementById('processObservation').innerHTML = `
+        <strong>Período médio do processo:</strong> ${processMonths} meses (editável conforme selecionado na coluna anterior de média de meses)
     `;
-
-    const retroactiveList = document.getElementById('retroactiveValues');
-    retroactiveList.innerHTML = '';
-    retroactiveResult.values.forEach(item => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            ${item.isThirteenth ? 
-                `<span class="highlight-13">${item.date}</span>` : 
-                item.date
-            } - R$ ${formatCurrency(item.value)}
-        `;
-        retroactiveList.appendChild(li);
-    });
+    
+    // Período do cálculo dos retroativos
+    document.getElementById('retroactivePeriod').innerHTML = `
+        <strong>Data Inicial:</strong> ${benefitEndDate.toLocaleDateString('pt-BR')} --- 
+        <strong>Data Final:</strong> ${processEndDate.toLocaleDateString('pt-BR')}
+    `;
 
     // Valores Vincendos
     document.getElementById('ongoingTotal').innerHTML = `
@@ -370,23 +357,6 @@ function displayResults(name, retroactiveResult, ongoingResult) {
 
     // FORÇAR TEXTO PRETO VIA JAVASCRIPT!
     setTimeout(() => {
-        // Período considerado nos retroativos
-        const retroCalculationInfo = document.querySelector('.retroactive .calculation-info');
-        if (retroCalculationInfo) {
-            retroCalculationInfo.style.color = '#000000';
-            retroCalculationInfo.style.fontWeight = '800';
-            const retroP = retroCalculationInfo.querySelector('p');
-            if (retroP) {
-                retroP.style.color = '#000000';
-                retroP.style.fontWeight = '800';
-                const retroStrong = retroP.querySelector('strong');
-                if (retroStrong) {
-                    retroStrong.style.color = '#000000';
-                    retroStrong.style.fontWeight = '800';
-                }
-            }
-        }
-
         // Período considerado nos vincendos
         const ongoingCalculationInfo = document.querySelector('.ongoing .calculation-info');
         if (ongoingCalculationInfo) {
