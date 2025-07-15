@@ -22,6 +22,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+function createDateFromInput(dateString) {
+    // Corrige problema de fuso horário do input HTML
+    // Input vem como "YYYY-MM-DD" mas Date() interpreta como UTC e pode dar 1 dia a menos
+    const [year, month, day] = dateString.split('-');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+}
+
+function calculateMonthsBetween(startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Cálculo direto: diferença de anos × 12 + diferença de meses
+    const yearDiff = end.getFullYear() - start.getFullYear();
+    const monthDiff = end.getMonth() - start.getMonth();
+    
+    let totalMonths = yearDiff * 12 + monthDiff;
+    
+    // Se o dia final é menor que o inicial, subtrai 1 mês
+    if (end.getDate() < start.getDate()) {
+        totalMonths--;
+    }
+    
+    return Math.max(0, totalMonths);
+}
+
 // Nova função para gerenciar o clique no botão de lock
 function handleLockButtonClick() {
     if (isAdminLoggedIn) {
@@ -111,8 +136,8 @@ function calculateValues() {
         return;
     }
 
-    const benefitEndDate = new Date(benefitEndDateInput);
-    const birthDate = new Date(birthDateInput);
+    const benefitEndDate = createDateFromInput(benefitEndDateInput);
+    const birthDate = createDateFromInput(birthDateInput);
     const processMonths = parseInt(processMonthsInput);
     
     // Parse mais flexível para o valor monetário
@@ -230,24 +255,6 @@ function calculateRetroactiveValues(benefitEndDate, processEndDate, monthlyAmoun
     };
 }
 
-function calculateMonthsBetween(startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    // Cálculo direto: diferença de anos × 12 + diferença de meses
-    const yearDiff = end.getFullYear() - start.getFullYear();
-    const monthDiff = end.getMonth() - start.getMonth();
-    
-    let totalMonths = yearDiff * 12 + monthDiff;
-    
-    // Se o dia final é menor que o inicial, subtrai 1 mês
-    if (end.getDate() < start.getDate()) {
-        totalMonths--;
-    }
-    
-    return Math.max(0, totalMonths);
-}
-
 function calculateOngoingValues(startDate, birthDate, gender, isRural, monthlyAmount) {
     // Calcula idade de aposentadoria
     const retirementAge = isRural ? 
@@ -269,41 +276,14 @@ function calculateOngoingValues(startDate, birthDate, gender, isRural, monthlyAm
         };
     }
 
-    const values = [];
-    let totalAmount = 0;
-    const currentDate = new Date(startDate);
-
-    // Calcula mês a mês até a aposentadoria
-    while (currentDate < retirementDate) {
-        const monthValue = monthlyAmount;
-        const dateStr = currentDate.toLocaleDateString('pt-BR', { 
-            month: '2-digit', 
-            year: 'numeric' 
-        });
-        
-        values.push({
-            date: dateStr,
-            value: monthValue,
-            isThirteenth: false
-        });
-        totalAmount += monthValue;
-
-        // Adiciona 13º salário em dezembro
-        if (currentDate.getMonth() === 11) { // Dezembro
-            values.push({
-                date: `13º/${currentDate.getFullYear()}`,
-                value: monthlyAmount,
-                isThirteenth: true
-            });
-            totalAmount += monthlyAmount;
-        }
-
-        currentDate.setMonth(currentDate.getMonth() + 1);
-    }
+    // Cálculo simples: total de meses × valor mensal
+    const totalMonths = calculateMonthsBetween(startDate, retirementDate);
+    const totalAmount = totalMonths * monthlyAmount;
 
     return {
-        values: values,
+        values: [],
         total: totalAmount,
+        totalMonths: totalMonths,
         period: {
             start: startDate,
             end: retirementDate
@@ -333,8 +313,8 @@ function displayResults(name, retroactiveResult, ongoingResult, processMonths, b
     
     // Período do cálculo dos retroativos
     document.getElementById('retroactivePeriod').innerHTML = `
-        <strong>Data Inicial:</strong> ${benefitEndDate.toLocaleDateString('pt-BR')} --- 
-        <strong>Data Final:</strong> ${processEndDate.toLocaleDateString('pt-BR')}
+        <strong>Data Inicial:</strong> ${retroactiveResult.period.start.toLocaleDateString('pt-BR')} --- 
+        <strong>Data Final:</strong> ${retroactiveResult.period.end.toLocaleDateString('pt-BR')}
     `;
 
     // Valores Vincendos - SIMPLIFICADO SEM LISTA
@@ -347,8 +327,6 @@ function displayResults(name, retroactiveResult, ongoingResult, processMonths, b
         <strong>Data Inicial:</strong> ${ongoingResult.period.start.toLocaleDateString('pt-BR')} --- 
         <strong>Data Final:</strong> ${ongoingResult.period.end.toLocaleDateString('pt-BR')}
     `;
-
-    // Remove a lista detalhada - agora só mostra período resumido
 
     // FORÇAR TEXTO PRETO VIA JAVASCRIPT!
     setTimeout(() => {
