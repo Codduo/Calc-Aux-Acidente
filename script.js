@@ -135,14 +135,13 @@ function calculateValues() {
     // Datas importantes para o cálculo
     const today = new Date();
     
-    // Adiciona os meses do processo à data atual
+    // Data fim do processo: hoje + meses do processo
     const processEndDate = new Date(today);
     processEndDate.setMonth(today.getMonth() + processMonths);
 
-    // Cálculo dos Valores Retroativos (corrigido para 5 anos de HOJE)
+    // Cálculo dos Valores Retroativos (lógica corrigida)
     const retroactiveResult = calculateRetroactiveValues(
         benefitEndDate, 
-        null, // Não usa mais fiveYearsAgo aqui, será calculado dentro da função
         processEndDate,
         monthlyAmount
     );
@@ -156,85 +155,97 @@ function calculateValues() {
         monthlyAmount
     );
 
-    // Sistema de desconto atualizado
+    // Sistema de desconto atualizado - LÓGICA CORRIGIDA
     let finalRetroactive = retroactiveResult;
     let finalOngoing = ongoingResult; // Vincendos sem desconto (é só estimativa)
     
     if (!isAdminLoggedIn) {
-        // Para clientes: aplica desconto APENAS nos retroativos
-        // Retroativos: COM desconto de 40% (mantém 60%) - É O QUE REALMENTE VAI RECEBER
+        // Para clientes: aplica desconto conforme planilha
+        // Desconto: 40% do valor total - 4 salários mínimos (R$ 6.072)
+        const valorBruto = retroactiveResult.total;
+        const descontoHonorarios = valorBruto * 0.40; // 40% de honorários
+        const valorAposHonorarios = valorBruto - descontoHonorarios;
+        const valorFinal = valorAposHonorarios - 6072; // Menos 4 salários mínimos
+        
         finalRetroactive = {
             ...retroactiveResult,
-            total: retroactiveResult.total * 0.6
+            total: Math.max(0, valorFinal) // Não pode ser negativo
         };
-        
-        // Vincendos: SEM desconto (é apenas estimativa informativa, não será recebido)
-        // Mantém valores originais pois é só para mostrar estimativa
     }
 
     // Exibição dos resultados
     displayResults(name, finalRetroactive, finalOngoing, processMonths, benefitEndDate, processEndDate);
 }
 
-function calculateRetroactiveValues(benefitEndDate, fiveYearsAgo, endDate, monthlyAmount) {
-    // CORREÇÃO: A data de início dos retroativos deve ser:
-    // - Se cessação foi há menos de 5 anos: um dia após a cessação
-    // - Se cessação foi há mais de 5 anos: 5 anos atrás de HOJE (não da cessação)
-    
+function calculateRetroactiveValues(benefitEndDate, processEndDate, monthlyAmount) {
     const today = new Date();
-    const oneDayAfterBenefitEnd = new Date(benefitEndDate);
-    oneDayAfterBenefitEnd.setDate(oneDayAfterBenefitEnd.getDate() + 1);
     
-    // Calcula 5 anos atrás de HOJE
-    const fiveYearsFromToday = new Date(today);
-    fiveYearsFromToday.setFullYear(today.getFullYear() - 5);
+    // Data de início: 1 dia após a cessação
+    const startDate = new Date(benefitEndDate);
+    startDate.setDate(benefitEndDate.getDate() + 1);
     
-    // A data de início é a MAIOR entre:
-    // 1. Um dia após a cessação
-    // 2. 5 anos atrás de hoje
-    const startDate = new Date(Math.max(oneDayAfterBenefitEnd.getTime(), fiveYearsFromToday.getTime()));
+    // Calcular meses de processo
+    const processMonths = calculateMonthsBetween(today, processEndDate);
     
-    const values = [];
-    let totalAmount = 0;
+    // Calcular meses desde cessação até hoje
+    const monthsFromStartToToday = calculateMonthsBetween(startDate, today);
     
-    const currentDate = new Date(startDate);
+    // Limite de retroativo: máximo 5 anos × 13 meses (inclui 13º) = 65 meses
+    const maxRetroactiveMonths = 5 * 13; // 65 meses
     
-    // Calcula mês a mês até a data final (fim do processo)
-    while (currentDate <= endDate) {
-        const monthValue = monthlyAmount;
-        const dateStr = currentDate.toLocaleDateString('pt-BR', { 
-            month: '2-digit', 
-            year: 'numeric' 
-        });
-        
-        values.push({
-            date: dateStr,
-            value: monthValue,
-            isThirteenth: false
-        });
-        totalAmount += monthValue;
-
-        // Adiciona 13º salário em dezembro
-        if (currentDate.getMonth() === 11) { // Dezembro
-            values.push({
-                date: `13º/${currentDate.getFullYear()}`,
-                value: monthlyAmount,
-                isThirteenth: true
-            });
-            totalAmount += monthlyAmount;
-        }
-
-        currentDate.setMonth(currentDate.getMonth() + 1);
+    // Retroativo limitado a 65 meses + processo sempre incluído
+    let retroactiveMonths = Math.min(monthsFromStartToToday, maxRetroactiveMonths);
+    let finalMonths = retroactiveMonths + processMonths;
+    
+    // Data de início final (se limitou retroativo, recalcula)
+    let finalStartDate = startDate;
+    if (monthsFromStartToToday > maxRetroactiveMonths) {
+        finalStartDate = new Date(today);
+        finalStartDate.setMonth(today.getMonth() - maxRetroactiveMonths);
     }
+    
+    const totalAmount = finalMonths * monthlyAmount;
+
+    console.log('DEBUG - Retroativos (CORRIGIDO):');
+    console.log('Cessação:', benefitEndDate.toLocaleDateString('pt-BR'));
+    console.log('Início (cessação + 1):', startDate.toLocaleDateString('pt-BR'));
+    console.log('Hoje:', today.toLocaleDateString('pt-BR'));
+    console.log('Fim processo:', processEndDate.toLocaleDateString('pt-BR'));
+    console.log('Meses desde cessação até hoje:', monthsFromStartToToday);
+    console.log('Limite retroativo (5 anos × 13):', maxRetroactiveMonths);
+    console.log('Retroativo final:', retroactiveMonths);
+    console.log('Meses de processo:', processMonths);
+    console.log('TOTAL MESES:', finalMonths);
+    console.log('Data início final:', finalStartDate.toLocaleDateString('pt-BR'));
+    console.log('Valor total:', totalAmount.toLocaleString('pt-BR'));
 
     return {
-        values: values,
+        values: [],
         total: totalAmount,
+        totalMonths: finalMonths,
         period: {
-            start: startDate,
-            end: endDate
+            start: finalStartDate,
+            end: processEndDate
         }
     };
+}
+
+function calculateMonthsBetween(startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Cálculo direto: diferença de anos × 12 + diferença de meses
+    const yearDiff = end.getFullYear() - start.getFullYear();
+    const monthDiff = end.getMonth() - start.getMonth();
+    
+    let totalMonths = yearDiff * 12 + monthDiff;
+    
+    // Se o dia final é menor que o inicial, subtrai 1 mês
+    if (end.getDate() < start.getDate()) {
+        totalMonths--;
+    }
+    
+    return Math.max(0, totalMonths);
 }
 
 function calculateOngoingValues(startDate, birthDate, gender, isRural, monthlyAmount) {
