@@ -178,8 +178,8 @@ header::before {
 .logo {
     position: relative;
     z-index: 1;
-    max-width: 80px;
-    height: 80px;
+    max-width: 180px;
+    height: 180px;
     margin-bottom: 20px;
     border-radius: 50%;
     border: 3px solid rgba(255, 255, 255, 0.2);
