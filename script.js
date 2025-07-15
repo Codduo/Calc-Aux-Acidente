@@ -160,33 +160,18 @@ function calculateValues() {
 
     // Sistema de desconto atualizado
     let finalRetroactive = retroactiveResult;
-    let finalOngoing = ongoingResult;
+    let finalOngoing = ongoingResult; // Vincendos sem desconto (é só estimativa)
     
     if (!isAdminLoggedIn) {
-        // Para clientes: aplica desconto nos retroativos E vincendos
-        // Retroativos: COM desconto de 40% (mantém 60%)
+        // Para clientes: aplica desconto APENAS nos retroativos
+        // Retroativos: COM desconto de 40% (mantém 60%) - É O QUE REALMENTE VAI RECEBER
         finalRetroactive = {
             ...retroactiveResult,
             total: retroactiveResult.total * 0.6
         };
         
-        // Vincendos: aplica desconto: 40% de desconto + 4 salários mínimos
-        const originalOngoingTotal = ongoingResult.total;
-        const discountedOngoingTotal = Math.max(0, (originalOngoingTotal * 0.6) - 6000);
-        
-        finalOngoing = {
-            ...ongoingResult,
-            total: discountedOngoingTotal
-        };
-        
-        // Ajusta os valores individuais proporcionalmente apenas para vincendos
-        if (finalOngoing.values.length > 0 && ongoingResult.total > 0) {
-            const ongoingMultiplier = finalOngoing.total / ongoingResult.total;
-            finalOngoing.values = finalOngoing.values.map(item => ({
-                ...item,
-                value: item.value * ongoingMultiplier
-            }));
-        }
+        // Vincendos: SEM desconto (é apenas estimativa informativa, não será recebido)
+        // Mantém valores originais pois é só para mostrar estimativa
     }
 
     // Exibição dos resultados
@@ -307,18 +292,18 @@ function displayResults(name, retroactiveResult, ongoingResult, processMonths, b
         <strong>Cliente:</strong> ${name}
     `;
 
-    // Totais - TÍTULO DISCRETO
+    // Totais - SÓ PARA INFORMAÇÃO
     const totalValue = retroactiveResult.total + ongoingResult.total;
     document.getElementById('totalValue').innerHTML = `
-        <small style="color: #718096; font-size: 0.9rem;">Valor Total Estimado até Aposentadoria: R$ ${formatCurrency(totalValue)}</small>
+        <small style="color: #718096; font-size: 0.9rem;">Valor Total Estimado até Aposentadoria (informativo): R$ ${formatCurrency(totalValue)}</small>
     `;
 
     // NOVA EXIBIÇÃO - Valores Retroativos como Parcela Única
     document.getElementById('lumpSumAmount').textContent = `R$ ${formatCurrency(retroactiveResult.total)}`;
     
-    // Observação sobre o período do processo
+    // Observação sobre o período do processo - SEM COMENTÁRIO EDITÁVEL
     document.getElementById('processObservation').innerHTML = `
-        <strong>Período médio do processo:</strong> ${processMonths} meses (editável conforme selecionado na coluna anterior de média de meses)
+        <strong>Período médio do processo:</strong> ${processMonths} meses
     `;
     
     // Período do cálculo dos retroativos
