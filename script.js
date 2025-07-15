@@ -134,17 +134,15 @@ function calculateValues() {
 
     // Datas importantes para o cálculo
     const today = new Date();
-    const fiveYearsAgo = new Date(today);
-    fiveYearsAgo.setFullYear(today.getFullYear() - 5);
     
     // Adiciona os meses do processo à data atual
     const processEndDate = new Date(today);
     processEndDate.setMonth(today.getMonth() + processMonths);
 
-    // Cálculo dos Valores Retroativos (inclui os meses do processo)
+    // Cálculo dos Valores Retroativos (corrigido para 5 anos de HOJE)
     const retroactiveResult = calculateRetroactiveValues(
         benefitEndDate, 
-        fiveYearsAgo, 
+        null, // Não usa mais fiveYearsAgo aqui, será calculado dentro da função
         processEndDate,
         monthlyAmount
     );
@@ -179,7 +177,23 @@ function calculateValues() {
 }
 
 function calculateRetroactiveValues(benefitEndDate, fiveYearsAgo, endDate, monthlyAmount) {
-    const startDate = new Date(Math.max(benefitEndDate.getTime(), fiveYearsAgo.getTime()));
+    // CORREÇÃO: A data de início dos retroativos deve ser:
+    // - Se cessação foi há menos de 5 anos: um dia após a cessação
+    // - Se cessação foi há mais de 5 anos: 5 anos atrás de HOJE (não da cessação)
+    
+    const today = new Date();
+    const oneDayAfterBenefitEnd = new Date(benefitEndDate);
+    oneDayAfterBenefitEnd.setDate(oneDayAfterBenefitEnd.getDate() + 1);
+    
+    // Calcula 5 anos atrás de HOJE
+    const fiveYearsFromToday = new Date(today);
+    fiveYearsFromToday.setFullYear(today.getFullYear() - 5);
+    
+    // A data de início é a MAIOR entre:
+    // 1. Um dia após a cessação
+    // 2. 5 anos atrás de hoje
+    const startDate = new Date(Math.max(oneDayAfterBenefitEnd.getTime(), fiveYearsFromToday.getTime()));
+    
     const values = [];
     let totalAmount = 0;
     
@@ -312,33 +326,18 @@ function displayResults(name, retroactiveResult, ongoingResult, processMonths, b
         <strong>Data Final:</strong> ${processEndDate.toLocaleDateString('pt-BR')}
     `;
 
-    // Valores Vincendos
+    // Valores Vincendos - SIMPLIFICADO SEM LISTA
     document.getElementById('ongoingTotal').innerHTML = `
-        <strong>Total:</strong> R$ ${formatCurrency(ongoingResult.total)}<br>
-        <small>Período: ${ongoingResult.period.start.toLocaleDateString('pt-BR')} até ${ongoingResult.period.end.toLocaleDateString('pt-BR')}</small>
+        <strong>Total:</strong> R$ ${formatCurrency(ongoingResult.total)}
     `;
 
-    const ongoingList = document.getElementById('ongoingValues');
-    ongoingList.innerHTML = '';
-    
-    if (ongoingResult.values.length === 0) {
-        const li = document.createElement('li');
-        li.innerHTML = '<em>Cliente já atingiu idade de aposentadoria</em>';
-        li.style.fontStyle = 'italic';
-        li.style.color = '#666';
-        ongoingList.appendChild(li);
-    } else {
-        ongoingResult.values.forEach(item => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                ${item.isThirteenth ? 
-                    `<span class="highlight-13">${item.date}</span>` : 
-                    item.date
-                } - R$ ${formatCurrency(item.value)}
-            `;
-            ongoingList.appendChild(li);
-        });
-    }
+    // Período resumido dos vincendos
+    document.getElementById('ongoingPeriodSummary').innerHTML = `
+        <strong>Data Inicial:</strong> ${ongoingResult.period.start.toLocaleDateString('pt-BR')} --- 
+        <strong>Data Final:</strong> ${ongoingResult.period.end.toLocaleDateString('pt-BR')}
+    `;
+
+    // Remove a lista detalhada - agora só mostra período resumido
 
     // FORÇAR TEXTO PRETO VIA JAVASCRIPT!
     setTimeout(() => {
